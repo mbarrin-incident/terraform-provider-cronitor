@@ -78,13 +78,13 @@ func (p *CronitorProvider) Configure(ctx context.Context, req provider.Configure
 
 func (p *CronitorProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewMonitorResource,
+		NewHttpMonitorResource,
 	}
 }
 
 func (p *CronitorProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewMonitorDataSource,
+		// NewMonitorDataSource,
 	}
 }
 
