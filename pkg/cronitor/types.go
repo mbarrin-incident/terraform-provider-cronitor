@@ -1,3 +1,5 @@
+// Copyright (c) HashiCorp, Inc.
+
 package cronitor
 
 type Request struct {
