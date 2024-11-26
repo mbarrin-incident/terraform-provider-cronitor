@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/henrywhitaker3/terraform-provider-cronitor/pkg/cronitor"
 )
 
@@ -31,16 +30,16 @@ type BaseMonitorModel struct {
 type HttpMonitorModel struct {
 	BaseMonitorModel
 
-	Url             types.String            `tfsdk:"url"`
-	Headers         map[string]types.String `tfsdk:"headers"`
-	Cookies         map[string]types.String `tfsdk:"cookies"`
-	Body            types.String            `tfsdk:"body"`
-	Method          types.String            `tfsdk:"method"`
-	TimeoutSeconds  types.Int32             `tfsdk:"timeout_seconds"`
-	Regions         types.List              `tfsdk:"regions"`
-	FollowRedirects types.Bool              `tfsdk:"follow_redirects"`
-	VerifySsl       types.Bool              `tfsdk:"verify_ssl"`
-	Assertions      types.List              `tfsdk:"assertions"`
+	Url             types.String `tfsdk:"url"`
+	Headers         types.Map    `tfsdk:"headers"`
+	Cookies         types.Map    `tfsdk:"cookies"`
+	Body            types.String `tfsdk:"body"`
+	Method          types.String `tfsdk:"method"`
+	TimeoutSeconds  types.Int32  `tfsdk:"timeout_seconds"`
+	Regions         types.List   `tfsdk:"regions"`
+	FollowRedirects types.Bool   `tfsdk:"follow_redirects"`
+	VerifySsl       types.Bool   `tfsdk:"verify_ssl"`
+	Assertions      types.List   `tfsdk:"assertions"`
 }
 
 type HeartbeatMonitorModel struct {
@@ -76,9 +75,11 @@ func toStringSlice(in types.List) []string {
 	return out
 }
 
-func toStringMap(in map[string]types.String) map[string]string {
+func toStringMap(in types.Map) map[string]string {
+	temp := map[string]types.String{}
+	in.ElementsAs(context.Background(), &temp, false)
 	out := map[string]string{}
-	for key, val := range in {
+	for key, val := range temp {
 		out[key] = val.ValueString()
 	}
 	return out
@@ -100,8 +101,8 @@ func toHttpMonitor(m *cronitor.Monitor) HttpMonitorModel {
 		Assertions:      stringSlice(m.Assertions),
 		Url:             types.StringValue(m.Request.URL),
 		Method:          types.StringValue(m.Request.Method),
-		Headers:         make(map[string]basetypes.StringValue),
-		Cookies:         make(map[string]basetypes.StringValue),
+		Headers:         types.MapNull(types.StringType),
+		Cookies:         types.MapNull(types.StringType),
 		Body:            types.StringNull(),
 		TimeoutSeconds:  types.Int32Value(int32(m.Request.TimeoutSeconds)),
 		Regions:         stringSlice(m.Request.Regions),
@@ -122,12 +123,19 @@ func toHttpMonitor(m *cronitor.Monitor) HttpMonitorModel {
 		out.GraceSeconds = types.Int32Value(int32(*m.GraceSeconds))
 	}
 
-	for key, val := range m.Request.Headers {
-		out.Headers[key] = types.StringValue(val)
+	if len(m.Request.Headers) > 0 {
+		elems := map[string]attr.Value{}
+		for key, val := range m.Request.Headers {
+			elems[key] = types.StringValue(val)
+		}
+		out.Headers = types.MapValueMust(types.StringType, elems)
 	}
-
-	for key, val := range m.Request.Cookies {
-		out.Cookies[key] = types.StringValue(val)
+	if len(m.Request.Cookies) > 0 {
+		elems := map[string]attr.Value{}
+		for key, val := range m.Request.Cookies {
+			elems[key] = types.StringValue(val)
+		}
+		out.Cookies = types.MapValueMust(types.StringType, elems)
 	}
 
 	return out
