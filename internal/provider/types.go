@@ -167,9 +167,19 @@ func httpToMonitorRequest(data HttpMonitorModel) *cronitor.Monitor {
 	if out.RealertInterval == "" {
 		out.RealertInterval = "every 8 hours"
 	}
-
 	if data.Schedule.ValueString() != "" {
 		out.Schedule = data.Schedule.ValueString()
+	}
+
+	g := int(data.GraceSeconds.ValueInt32())
+	out.GraceSeconds = &g
+	st := int(data.ScheduleTolerance.ValueInt32())
+	out.ScheduleTolerance = &st
+	ft := int(data.FailureTolerance.ValueInt32())
+	out.FailureTolerance = &ft
+	if data.Timezone.ValueString() != "" {
+		tz := data.Timezone.ValueString()
+		out.Timezone = &tz
 	}
 
 	return out
@@ -223,6 +233,17 @@ func heartbeatToMonitorRequest(data HeartbeatMonitorModel) *cronitor.Monitor {
 
 	if data.Schedule.ValueString() != "" {
 		out.Schedule = data.Schedule.ValueString()
+	}
+
+	g := int(data.GraceSeconds.ValueInt32())
+	out.GraceSeconds = &g
+	st := int(data.ScheduleTolerance.ValueInt32())
+	out.ScheduleTolerance = &st
+	ft := int(data.FailureTolerance.ValueInt32())
+	out.FailureTolerance = &ft
+	if data.Timezone.ValueString() != "" {
+		tz := data.Timezone.ValueString()
+		out.Timezone = &tz
 	}
 
 	return out
