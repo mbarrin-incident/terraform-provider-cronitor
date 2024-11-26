@@ -48,6 +48,16 @@ type HeartbeatMonitorModel struct {
 	TelemetryUrl types.String `tfsdk:"telemetry_url"`
 }
 
+type NotificationListModel struct {
+	Name      types.String `tfsdk:"name"`
+	Key       types.String `tfsdk:"key"`
+	Emails    types.List   `tfsdk:"emails"`
+	Slack     types.List   `tfsdk:"slack"`
+	Pagerduty types.List   `tfsdk:"pagerduty"`
+	Phones    types.List   `tfsdk:"phones"`
+	Webhooks  types.List   `tfsdk:"webhooks"`
+}
+
 func processSlice[T, U any](in []T, t attr.Type, c func(T) U) types.List {
 	if len(in) == 0 {
 		return types.ListNull(t)
@@ -247,6 +257,32 @@ func heartbeatToMonitorRequest(data HeartbeatMonitorModel) *cronitor.Monitor {
 	}
 
 	return out
+}
+
+func toNotificationList(l *cronitor.NotificationList) NotificationListModel {
+	return NotificationListModel{
+		Name:      types.StringValue(l.Name),
+		Key:       types.StringValue(l.Key),
+		Emails:    stringSlice(l.Notifications.Emails),
+		Slack:     stringSlice(l.Notifications.Slack),
+		Pagerduty: stringSlice(l.Notifications.Pagerduty),
+		Phones:    stringSlice(l.Notifications.Phones),
+		Webhooks:  stringSlice(l.Notifications.Webhooks),
+	}
+}
+
+func listToListRequest(data NotificationListModel) *cronitor.NotificationList {
+	return &cronitor.NotificationList{
+		Name: data.Name.ValueString(),
+		Key:  data.Key.ValueString(),
+		Notifications: cronitor.Notifications{
+			Emails:    toStringSlice(data.Emails),
+			Slack:     toStringSlice(data.Slack),
+			Pagerduty: toStringSlice(data.Pagerduty),
+			Phones:    toStringSlice(data.Phones),
+			Webhooks:  toStringSlice(data.Webhooks),
+		},
+	}
 }
 
 func fixSliceOrder[T comparable](correct []T, incorrect *[]T) {

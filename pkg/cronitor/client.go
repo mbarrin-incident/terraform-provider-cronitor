@@ -5,17 +5,23 @@ package cronitor
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
 type Client struct {
 	endpoint string
 	ApiKey   string
 	client   *http.Client
+
+	listKeyRegex *regexp.Regexp
 }
 
 type NewClientOpts struct {
@@ -26,21 +32,25 @@ type NewClientOpts struct {
 
 func NewClient(opts NewClientOpts) *Client {
 	if opts.Endpoint == "" {
-		opts.Endpoint = "https://cronitor.io/api"
+		opts.Endpoint = "https://cronitor.io"
 	}
 	if opts.Client == nil {
 		opts.Client = http.DefaultClient
 	}
 
+	// Ignore the error as it will always compile
+	regex, _ := regexp.Compile(`^[0-9a-z0-9-_]+$`)
+
 	return &Client{
-		endpoint: opts.Endpoint,
-		ApiKey:   opts.ApiKey,
-		client:   opts.Client,
+		endpoint:     opts.Endpoint,
+		ApiKey:       opts.ApiKey,
+		client:       opts.Client,
+		listKeyRegex: regex,
 	}
 }
 
 func (c *Client) GetMonitor(ctx context.Context, id string) (*Monitor, error) {
-	req, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/monitors/%s", id), nil)
+	req, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/api/monitors/%s", id), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monitor %s: %w", id, err)
 	}
@@ -69,7 +79,7 @@ func (c *Client) GetMonitor(ctx context.Context, id string) (*Monitor, error) {
 
 func (c *Client) CreateMonitor(ctx context.Context, monitor *Monitor) (*Monitor, error) {
 	c.setCreateDefaults(monitor)
-	req, err := c.request(ctx, http.MethodPost, "/monitors", monitor)
+	req, err := c.request(ctx, http.MethodPost, "/api/monitors", monitor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create monitor request: %w", err)
 	}
@@ -100,12 +110,10 @@ func (c *Client) UpdateMonitor(ctx context.Context, monitor *Monitor) (*Monitor,
 	if monitor.Key == "" {
 		return nil, errors.New("cannot update monitor with empty key")
 	}
-	req, err := c.request(ctx, http.MethodPut, fmt.Sprintf("/monitors/%s", monitor.Key), monitor)
+	req, err := c.request(ctx, http.MethodPut, fmt.Sprintf("/api/monitors/%s", monitor.Key), monitor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build update request: %w", err)
 	}
-
-	// panic(string(by))
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -125,7 +133,7 @@ func (c *Client) UpdateMonitor(ctx context.Context, monitor *Monitor) (*Monitor,
 }
 
 func (c *Client) DeleteMonitor(ctx context.Context, id string) error {
-	req, err := c.request(ctx, http.MethodDelete, fmt.Sprintf("/monitors/%s", id), nil)
+	req, err := c.request(ctx, http.MethodDelete, fmt.Sprintf("/api/monitors/%s", id), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request to delete monitor %s: %w", id, err)
 	}
@@ -137,6 +145,109 @@ func (c *Client) DeleteMonitor(ctx context.Context, id string) error {
 
 	if resp.StatusCode > 299 {
 		return ErrFailedDeleteMonitor
+	}
+
+	return nil
+}
+
+func (c *Client) GetNotificationList(ctx context.Context, id string) (*NotificationList, error) {
+	req, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/v1/templates/%s", id), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get notification list: %w", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get notification list code: %d body: %s", resp.StatusCode, string(body))
+	}
+
+	out := &NotificationList{}
+	if err := json.Unmarshal(body, out); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	}
+
+	return out, nil
+}
+
+func (c *Client) CreateNotificationList(ctx context.Context, list *NotificationList) (*NotificationList, error) {
+	key := make([]byte, 3)
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create random bytes: %w", err)
+	}
+
+	list.Key = fmt.Sprintf("%s-%s", strings.ToLower(list.Name), hex.EncodeToString(key))
+	if !c.listKeyRegex.Match([]byte(list.Key)) {
+		return nil, fmt.Errorf("invalid key, only lowercase letters, numbers, dashes and underscores: %s", list.Key)
+	}
+
+	req, err := c.request(ctx, http.MethodPost, "/v1/templates", list)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create notification list: %w", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("failed to create notification list code: %d body: %s", resp.StatusCode, string(body))
+	}
+
+	return c.GetNotificationList(ctx, list.Key)
+}
+
+func (c *Client) UpdateNotificationList(ctx context.Context, list *NotificationList) (*NotificationList, error) {
+	req, err := c.request(ctx, http.MethodPut, fmt.Sprintf("/v1/templates/%s", list.Key), list)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update notification list: %w", err)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to update notification list code: %d body: %s", resp.StatusCode, string(body))
+	}
+
+	return c.GetNotificationList(ctx, list.Key)
+}
+
+func (c *Client) DeleteNotificationList(ctx context.Context, list *NotificationList) error {
+	req, err := c.request(ctx, http.MethodDelete, fmt.Sprintf("/v1/templates/%s", list.Key), list)
+	if err != nil {
+		return fmt.Errorf("failed to build request: %w", err)
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to delete notification list: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to update notification list code: %d", resp.StatusCode)
 	}
 
 	return nil

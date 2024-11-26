@@ -1,0 +1,20 @@
+meta {
+  name: Get notification lists
+  type: http
+  seq: 5
+}
+
+get {
+  url: https://cronitor.io/v1/templates/{{key}}
+  body: none
+  auth: basic
+}
+
+auth:basic {
+  username: {{API_KEY}}
+  password: 
+}
+
+vars:pre-request {
+  key: demo
+}
