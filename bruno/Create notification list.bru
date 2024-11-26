@@ -1,0 +1,26 @@
+meta {
+  name: Create notification list
+  type: http
+  seq: 6
+}
+
+post {
+  url: https://cronitor.io/v1/templates
+  body: json
+  auth: basic
+}
+
+auth:basic {
+  username: {{API_KEY}}
+  password: 
+}
+
+body:json {
+  {
+    "name": "Demo",
+    "key": "demo",
+    "notifications": {
+      "webhooks": ["https://google.com"]
+    }
+  }
+}

@@ -35,3 +35,17 @@ type Monitor struct {
 	Type              string   `json:"type"`
 	Environments      []string `json:"environments"`
 }
+
+type Notifications struct {
+	Emails    []string `json:"emails,omitempty"`
+	Slack     []string `json:"slack,omitempty"`
+	Pagerduty []string `json:"pagerduty,omitempty"`
+	Phones    []string `json:"phones,omitempty"`
+	Webhooks  []string `json:"webhooks,omitempty"`
+}
+
+type NotificationList struct {
+	Name          string        `json:"name"`
+	Key           string        `json:"key"`
+	Notifications Notifications `json:"notifications,omitempty"`
+}

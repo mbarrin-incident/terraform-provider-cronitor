@@ -80,12 +80,13 @@ func (p *CronitorProvider) Resources(ctx context.Context) []func() resource.Reso
 	return []func() resource.Resource{
 		NewHttpMonitorResource,
 		NewHeartbeatMonitorResource,
+		NewNotificationListResource,
 	}
 }
 
 func (p *CronitorProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		// NewMonitorDataSource,
+		NewExampleDataSource,
 	}
 }
 

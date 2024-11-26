@@ -205,7 +205,7 @@ func (r *HttpMonitorResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	monitor, err := r.client.Create(ctx, httpToMonitorRequest(data))
+	monitor, err := r.client.CreateMonitor(ctx, httpToMonitorRequest(data))
 	if err != nil {
 		resp.Diagnostics.AddError("failed to create monitor", err.Error())
 		return
@@ -233,7 +233,7 @@ func (r *HttpMonitorResource) Read(ctx context.Context, req resource.ReadRequest
 
 	state := httpToMonitorRequest(data)
 
-	monitor, err := r.client.Get(ctx, data.Key.ValueString())
+	monitor, err := r.client.GetMonitor(ctx, data.Key.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get monitor from api", err.Error())
 		return
@@ -264,7 +264,7 @@ func (r *HttpMonitorResource) Update(ctx context.Context, req resource.UpdateReq
 
 	upd := httpToMonitorRequest(plan)
 	upd.Key = state.Key.ValueString()
-	monitor, err := r.client.Update(ctx, upd)
+	monitor, err := r.client.UpdateMonitor(ctx, upd)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to update http monitor", err.Error())
 		return
@@ -291,7 +291,7 @@ func (r *HttpMonitorResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	if err := r.client.Delete(ctx, data.Key.ValueString()); err != nil {
+	if err := r.client.DeleteMonitor(ctx, data.Key.ValueString()); err != nil {
 		resp.Diagnostics.AddError("failed to delete record", err.Error())
 		return
 	}

@@ -160,7 +160,7 @@ func (r *HeartbeatMonitorResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	monitor, err := r.client.Create(ctx, heartbeatToMonitorRequest(data))
+	monitor, err := r.client.CreateMonitor(ctx, heartbeatToMonitorRequest(data))
 	if err != nil {
 		resp.Diagnostics.AddError("failed to create monitor", err.Error())
 		return
@@ -189,7 +189,7 @@ func (r *HeartbeatMonitorResource) Read(ctx context.Context, req resource.ReadRe
 
 	state := heartbeatToMonitorRequest(data)
 
-	monitor, err := r.client.Get(ctx, data.Key.ValueString())
+	monitor, err := r.client.GetMonitor(ctx, data.Key.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get monitor from api", err.Error())
 		return
@@ -220,7 +220,7 @@ func (r *HeartbeatMonitorResource) Update(ctx context.Context, req resource.Upda
 
 	upd := heartbeatToMonitorRequest(plan)
 	upd.Key = state.Key.ValueString()
-	monitor, err := r.client.Update(ctx, upd)
+	monitor, err := r.client.UpdateMonitor(ctx, upd)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to update heartbeat monitor", err.Error())
 		return
@@ -247,7 +247,7 @@ func (r *HeartbeatMonitorResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	if err := r.client.Delete(ctx, data.Key.ValueString()); err != nil {
+	if err := r.client.DeleteMonitor(ctx, data.Key.ValueString()); err != nil {
 		resp.Diagnostics.AddError("failed to delete record", err.Error())
 		return
 	}
