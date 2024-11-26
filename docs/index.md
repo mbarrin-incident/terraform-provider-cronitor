@@ -13,10 +13,9 @@ description: |-
 ## Example Usage
 
 ```terraform
-# Copyright (c) HashiCorp, Inc.
-
-provider "scaffolding" {
+provider "cronitor" {
   # example configuration here
+  api_key = "your sdk api key"
 }
 ```
 

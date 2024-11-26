@@ -1,5 +1,5 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Henry Whitaker
+// SPDX-License-Identifier: MIT
 
 package main
 
