@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -150,5 +151,21 @@ func httpToMonitorRequest(data HttpMonitorModel) *cronitor.Monitor {
 	if out.RealertInterval == "" {
 		out.RealertInterval = "every 8 hours"
 	}
+
 	return out
+}
+
+func fixSliceOrder[T comparable](correct []T, incorrect []T) {
+	if len(correct) != len(incorrect) {
+		return
+	}
+
+	for _, i := range incorrect {
+		if !slices.Contains(correct, i) {
+			return
+		}
+	}
+
+	// We now have to slices that contain the same elements but not neccesarrily in the same order
+	copy(correct, incorrect)
 }

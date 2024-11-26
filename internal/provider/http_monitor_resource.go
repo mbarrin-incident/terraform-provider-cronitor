@@ -267,6 +267,11 @@ func (r *HttpMonitorResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	fixSliceOrder(upd.Assertions, monitor.Assertions)
+	fixSliceOrder(upd.Environments, monitor.Environments)
+	fixSliceOrder(upd.Tags, monitor.Tags)
+	fixSliceOrder(upd.Request.Regions, monitor.Request.Regions)
+
 	state = toHttpMonitor(monitor)
 
 	// Save updated data into Terraform state
@@ -290,7 +295,7 @@ func (r *HttpMonitorResource) Delete(ctx context.Context, req resource.DeleteReq
 }
 
 func (r *HttpMonitorResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	resource.ImportStatePassthroughID(ctx, path.Root("key"), req, resp)
 }
 
 func (r *HttpMonitorResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
