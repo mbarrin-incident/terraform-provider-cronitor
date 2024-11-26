@@ -1,6 +1,7 @@
 resource "cronitor_notification_list" "this" {
   name = "Demo"
   webhooks = [
-    "https://registry.terraform.io/providers/henrywhitaker3/cronitor/latest"
+    # The name of a webhooks integration setup in the cronitor dashboard
+    "name"
   ]
 }
