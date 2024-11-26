@@ -47,7 +47,7 @@ func (r *HttpMonitorResource) Schema(ctx context.Context, req resource.SchemaReq
 
 		Attributes: map[string]schema.Attribute{
 			"key": schema.StringAttribute{
-				MarkdownDescription: "The monitor name",
+				MarkdownDescription: "The monitor id",
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -71,6 +71,8 @@ func (r *HttpMonitorResource) Schema(ctx context.Context, req resource.SchemaReq
 			"failure_tolerance": schema.Int32Attribute{
 				MarkdownDescription: "The number of times the monitor can fail before triggering an alert",
 				Optional:            true,
+				Computed:            true,
+				Default:             int32default.StaticInt32(0),
 			},
 			"grace_seconds": schema.Int32Attribute{
 				MarkdownDescription: "The number of seconds to wait after failure before triggering an alert",
@@ -144,6 +146,8 @@ func (r *HttpMonitorResource) Schema(ctx context.Context, req resource.SchemaReq
 			"schedule_tolerance": schema.Int32Attribute{
 				MarkdownDescription: "The number of missed scheduled executions before triggering an alert",
 				Optional:            true,
+				Computed:            true,
+				Default:             int32default.StaticInt32(0),
 			},
 			"tags": schema.ListAttribute{
 				ElementType:         types.StringType,

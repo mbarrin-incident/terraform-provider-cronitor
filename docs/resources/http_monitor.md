@@ -57,4 +57,4 @@ resource "cronitor_http_monitor" "this" {
 
 ### Read-Only
 
-- `key` (String) The monitor name
+- `key` (String) The monitor id
