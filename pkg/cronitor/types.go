@@ -41,7 +41,7 @@ type Notifications struct {
 	Slack     []string `json:"slack,omitempty"`
 	Pagerduty []string `json:"pagerduty,omitempty"`
 	Phones    []string `json:"phones,omitempty"`
-	Webhooks  []string `json:"webhooks,omitempty"`
+	Webhooks  []string `json:"webhook,omitempty"`
 }
 
 type NotificationList struct {
