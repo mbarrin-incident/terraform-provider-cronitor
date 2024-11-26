@@ -13,7 +13,6 @@ import (
 type BaseMonitorModel struct {
 	Key               types.String `tfsdk:"key"`
 	Name              types.String `tfsdk:"name"`
-	Assertions        types.List   `tfsdk:"assertions"`
 	Disabled          types.Bool   `tfsdk:"disabled"`
 	Paused            types.Bool   `tfsdk:"paused"`
 	Schedule          types.String `tfsdk:"schedule"`
@@ -39,6 +38,11 @@ type HttpMonitorModel struct {
 	Regions         types.List              `tfsdk:"regions"`
 	FollowRedirects types.Bool              `tfsdk:"follow_redirects"`
 	VerifySsl       types.Bool              `tfsdk:"verify_ssl"`
+	Assertions      types.List              `tfsdk:"assertions"`
+}
+
+type HeartbeatMonitorModel struct {
+	BaseMonitorModel
 }
 
 func processSlice[T, U any](in []T, t attr.Type, c func(T) U) types.List {
@@ -81,7 +85,6 @@ func toHttpMonitor(m *cronitor.Monitor) HttpMonitorModel {
 		BaseMonitorModel: BaseMonitorModel{
 			Key:             types.StringValue(m.Key),
 			Name:            types.StringValue(m.Name),
-			Assertions:      stringSlice(m.Assertions),
 			Disabled:        types.BoolValue(m.Disabled),
 			Paused:          types.BoolValue(m.Paused),
 			Schedule:        types.StringValue(m.Schedule),
@@ -90,6 +93,7 @@ func toHttpMonitor(m *cronitor.Monitor) HttpMonitorModel {
 			RealertInterval: types.StringValue(m.RealertInterval),
 			Environments:    stringSlice(m.Environments),
 		},
+		Assertions:      stringSlice(m.Assertions),
 		Url:             types.StringValue(m.Request.URL),
 		Method:          types.StringValue(m.Request.Method),
 		Headers:         make(map[string]basetypes.StringValue),
@@ -147,6 +151,55 @@ func httpToMonitorRequest(data HttpMonitorModel) *cronitor.Monitor {
 			FollowRedirects: data.FollowRedirects.ValueBool(),
 			VerifySsl:       data.VerifySsl.ValueBool(),
 		},
+	}
+	if out.RealertInterval == "" {
+		out.RealertInterval = "every 8 hours"
+	}
+
+	return out
+}
+
+func toHeartbeatMonitor(m *cronitor.Monitor) HeartbeatMonitorModel {
+	out := HeartbeatMonitorModel{
+		BaseMonitorModel: BaseMonitorModel{
+			Key:             types.StringValue(m.Key),
+			Name:            types.StringValue(m.Name),
+			Disabled:        types.BoolValue(m.Disabled),
+			Paused:          types.BoolValue(m.Paused),
+			Schedule:        types.StringValue(m.Schedule),
+			Notify:          stringSlice(m.Notify),
+			Tags:            stringSlice(m.Tags),
+			RealertInterval: types.StringValue(m.RealertInterval),
+			Environments:    stringSlice(m.Environments),
+		},
+	}
+
+	if m.Timezone != nil {
+		out.Timezone = types.StringValue(*m.Timezone)
+	}
+	if m.ScheduleTolerance != nil {
+		out.ScheduleTolerance = types.Int32Value(int32(*m.ScheduleTolerance))
+	}
+	if m.FailureTolerance != nil {
+		out.FailureTolerance = types.Int32Value(int32(*m.FailureTolerance))
+	}
+	if m.GraceSeconds != nil {
+		out.GraceSeconds = types.Int32Value(int32(*m.GraceSeconds))
+	}
+
+	return out
+}
+
+func heartbeatToMonitorRequest(data HeartbeatMonitorModel) *cronitor.Monitor {
+	out := &cronitor.Monitor{
+		Name:         data.Name.ValueString(),
+		Disabled:     data.Disabled.ValueBool(),
+		Paused:       data.Disabled.ValueBool(),
+		Notify:       toStringSlice(data.Notify),
+		Tags:         toStringSlice(data.Tags),
+		Environments: toStringSlice(data.Environments),
+		Type:         "heartbeat",
+		Platform:     "linux",
 	}
 	if out.RealertInterval == "" {
 		out.RealertInterval = "every 8 hours"
