@@ -6,16 +6,15 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -39,11 +38,6 @@ type HttpMonitorResource struct {
 
 func (r *HttpMonitorResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_http_monitor"
-}
-
-func emptyMap() defaults.Map {
-	m, _ := types.MapValue(types.StringType, make(map[string]attr.Value))
-	return mapdefault.StaticValue(m)
 }
 
 func (r *HttpMonitorResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -104,15 +98,13 @@ func (r *HttpMonitorResource) Schema(ctx context.Context, req resource.SchemaReq
 				ElementType:         types.StringType,
 				MarkdownDescription: "The headers sent with the request",
 				Optional:            true,
-				Computed:            true,
-				Default:             emptyMap(),
+				// Default:             emptyMap(),
 			},
 			"cookies": schema.MapAttribute{
 				ElementType:         types.StringType,
 				MarkdownDescription: "The cookies sent with the request",
 				Optional:            true,
-				Computed:            true,
-				Default:             emptyMap(),
+				// Default:             emptyMap(),
 			},
 			"body": schema.StringAttribute{
 				MarkdownDescription: "The body sent with the request",
@@ -235,11 +227,18 @@ func (r *HttpMonitorResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	state := httpToMonitorRequest(data)
+
 	monitor, err := r.client.Get(ctx, data.Key.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get monitor from api", err.Error())
 		return
 	}
+
+	fixSliceOrder(state.Assertions, &monitor.Assertions)
+	fixSliceOrder(state.Environments, &monitor.Environments)
+	fixSliceOrder(state.Tags, &monitor.Tags)
+	fixSliceOrder(state.Request.Regions, &monitor.Request.Regions)
 
 	data = toHttpMonitor(monitor)
 
@@ -267,10 +266,10 @@ func (r *HttpMonitorResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	fixSliceOrder(upd.Assertions, monitor.Assertions)
-	fixSliceOrder(upd.Environments, monitor.Environments)
-	fixSliceOrder(upd.Tags, monitor.Tags)
-	fixSliceOrder(upd.Request.Regions, monitor.Request.Regions)
+	fixSliceOrder(upd.Assertions, &monitor.Assertions)
+	fixSliceOrder(upd.Environments, &monitor.Environments)
+	fixSliceOrder(upd.Tags, &monitor.Tags)
+	fixSliceOrder(upd.Request.Regions, &monitor.Request.Regions)
 
 	state = toHttpMonitor(monitor)
 
@@ -305,6 +304,19 @@ func (r *HttpMonitorResource) ValidateConfig(ctx context.Context, req resource.V
 
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	mon := httpToMonitorRequest(data)
+
+	for key := range mon.Request.Headers {
+		if key != strings.ToLower(key) {
+			resp.Diagnostics.AddError("header keys must be in lower case", key)
+		}
+	}
+	for key := range mon.Request.Cookies {
+		if key != strings.ToLower(key) {
+			resp.Diagnostics.AddError("cookie keys must be in lower case", key)
+		}
 	}
 
 	// if err := data.validate(); err != nil {

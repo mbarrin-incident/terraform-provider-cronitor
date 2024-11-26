@@ -228,21 +228,27 @@ func heartbeatToMonitorRequest(data HeartbeatMonitorModel) *cronitor.Monitor {
 	return out
 }
 
-func fixSliceOrder[T comparable](correct []T, incorrect []T) {
-	if len(correct) != len(incorrect) {
+func fixSliceOrder[T comparable](correct []T, incorrect *[]T) {
+	if incorrect == nil {
+		*incorrect = []T{}
+	}
+
+	if len(correct) != len(*incorrect) {
 		return
 	}
 
-	if correct == nil || incorrect == nil {
+	if correct == nil {
+		*incorrect = nil
 		return
 	}
 
-	for _, i := range incorrect {
+	for _, i := range *incorrect {
 		if !slices.Contains(correct, i) {
 			return
 		}
 	}
 
-	// We now have to slices that contain the same elements but not neccesarrily in the same order
-	copy(correct, incorrect)
+	new := []T{}
+	new = append(new, correct...)
+	*incorrect = new
 }
