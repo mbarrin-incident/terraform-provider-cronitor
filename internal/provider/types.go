@@ -43,6 +43,8 @@ type HttpMonitorModel struct {
 
 type HeartbeatMonitorModel struct {
 	BaseMonitorModel
+
+	TelemetryUrl types.String `tfsdk:"telemetry_url"`
 }
 
 func processSlice[T, U any](in []T, t attr.Type, c func(T) U) types.List {
@@ -156,6 +158,10 @@ func httpToMonitorRequest(data HttpMonitorModel) *cronitor.Monitor {
 		out.RealertInterval = "every 8 hours"
 	}
 
+	if data.Schedule.ValueString() != "" {
+		out.Schedule = data.Schedule.ValueString()
+	}
+
 	return out
 }
 
@@ -205,11 +211,19 @@ func heartbeatToMonitorRequest(data HeartbeatMonitorModel) *cronitor.Monitor {
 		out.RealertInterval = "every 8 hours"
 	}
 
+	if data.Schedule.ValueString() != "" {
+		out.Schedule = data.Schedule.ValueString()
+	}
+
 	return out
 }
 
 func fixSliceOrder[T comparable](correct []T, incorrect []T) {
 	if len(correct) != len(incorrect) {
+		return
+	}
+
+	if correct == nil || incorrect == nil {
 		return
 	}
 

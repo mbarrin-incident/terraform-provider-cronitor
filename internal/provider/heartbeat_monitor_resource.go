@@ -115,6 +115,14 @@ func (r *HeartbeatMonitorResource) Schema(ctx context.Context, req resource.Sche
 				Computed:            true,
 				Default:             listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{types.StringValue("production")})),
 			},
+			"telemetry_url": schema.StringAttribute{
+				MarkdownDescription: "The url to send pings to",
+				Sensitive:           true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
@@ -155,6 +163,7 @@ func (r *HeartbeatMonitorResource) Create(ctx context.Context, req resource.Crea
 	}
 
 	data.Key = types.StringValue(monitor.Key)
+	data.TelemetryUrl = types.StringValue(fmt.Sprintf("https://cronitor.link/p/%s/%s", r.client.ApiKey, monitor.Key))
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log
@@ -181,6 +190,7 @@ func (r *HeartbeatMonitorResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	data = toHeartbeatMonitor(monitor)
+	data.TelemetryUrl = types.StringValue(fmt.Sprintf("https://cronitor.link/p/%s/%s", r.client.ApiKey, monitor.Key))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
@@ -212,6 +222,7 @@ func (r *HeartbeatMonitorResource) Update(ctx context.Context, req resource.Upda
 	fixSliceOrder(upd.Request.Regions, monitor.Request.Regions)
 
 	state = toHeartbeatMonitor(monitor)
+	state.TelemetryUrl = types.StringValue(fmt.Sprintf("https://cronitor.link/p/%s/%s", r.client.ApiKey, monitor.Key))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

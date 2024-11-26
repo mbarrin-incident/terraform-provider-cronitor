@@ -14,7 +14,7 @@ import (
 
 type Client struct {
 	endpoint string
-	apiKey   string
+	ApiKey   string
 	client   *http.Client
 }
 
@@ -34,7 +34,7 @@ func NewClient(opts NewClientOpts) *Client {
 
 	return &Client{
 		endpoint: opts.Endpoint,
-		apiKey:   opts.ApiKey,
+		ApiKey:   opts.ApiKey,
 		client:   opts.Client,
 	}
 }
@@ -174,7 +174,7 @@ func (c *Client) request(ctx context.Context, method, endpoint string, body any)
 	}
 
 	req = req.WithContext(ctx)
-	req.SetBasicAuth(c.apiKey, "")
+	req.SetBasicAuth(c.ApiKey, "")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
