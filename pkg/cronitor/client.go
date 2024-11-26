@@ -39,7 +39,7 @@ func NewClient(opts NewClientOpts) *Client {
 	}
 }
 
-func (c *Client) Get(ctx context.Context, id string) (*Monitor, error) {
+func (c *Client) GetMonitor(ctx context.Context, id string) (*Monitor, error) {
 	req, err := c.request(ctx, http.MethodGet, fmt.Sprintf("/monitors/%s", id), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monitor %s: %w", id, err)
@@ -67,7 +67,7 @@ func (c *Client) Get(ctx context.Context, id string) (*Monitor, error) {
 	return mon, nil
 }
 
-func (c *Client) Create(ctx context.Context, monitor *Monitor) (*Monitor, error) {
+func (c *Client) CreateMonitor(ctx context.Context, monitor *Monitor) (*Monitor, error) {
 	c.setCreateDefaults(monitor)
 	req, err := c.request(ctx, http.MethodPost, "/monitors", monitor)
 	if err != nil {
@@ -93,10 +93,10 @@ func (c *Client) Create(ctx context.Context, monitor *Monitor) (*Monitor, error)
 		return nil, fmt.Errorf("failed to unmarshal json response: %w", err)
 	}
 
-	return c.Get(ctx, mon.Key)
+	return c.GetMonitor(ctx, mon.Key)
 }
 
-func (c *Client) Update(ctx context.Context, monitor *Monitor) (*Monitor, error) {
+func (c *Client) UpdateMonitor(ctx context.Context, monitor *Monitor) (*Monitor, error) {
 	if monitor.Key == "" {
 		return nil, errors.New("cannot update monitor with empty key")
 	}
@@ -121,10 +121,10 @@ func (c *Client) Update(ctx context.Context, monitor *Monitor) (*Monitor, error)
 		return nil, fmt.Errorf("failed to update monitor, code %d, response %s", resp.StatusCode, string(body))
 	}
 
-	return c.Get(ctx, monitor.Key)
+	return c.GetMonitor(ctx, monitor.Key)
 }
 
-func (c *Client) Delete(ctx context.Context, id string) error {
+func (c *Client) DeleteMonitor(ctx context.Context, id string) error {
 	req, err := c.request(ctx, http.MethodDelete, fmt.Sprintf("/monitors/%s", id), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request to delete monitor %s: %w", id, err)
