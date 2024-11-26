@@ -4,15 +4,23 @@ meta {
   seq: 4
 }
 
-get {
+put {
   url: https://cronitor.io/api/monitors/{{id}}
-  body: none
+  body: json
   auth: basic
 }
 
 auth:basic {
   username: {{API_KEY}}
   password: 
+}
+
+body:json {
+  {
+    "assertions": [
+      "response.code = 200"
+    ]
+  }
 }
 
 vars:pre-request {
