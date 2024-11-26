@@ -194,7 +194,6 @@ func (r *HeartbeatMonitorResource) Read(ctx context.Context, req resource.ReadRe
 	fixSliceOrder(state.Assertions, &monitor.Assertions)
 	fixSliceOrder(state.Environments, &monitor.Environments)
 	fixSliceOrder(state.Tags, &monitor.Tags)
-	fixSliceOrder(state.Request.Regions, &monitor.Request.Regions)
 
 	data = toHeartbeatMonitor(monitor)
 	data.TelemetryUrl = types.StringValue(fmt.Sprintf("https://cronitor.link/p/%s/%s", r.client.ApiKey, monitor.Key))
